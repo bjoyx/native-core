@@ -3,12 +3,12 @@
  *
  * The Game Closure SDK is free software: you can redistribute it and/or modify
  * it under the terms of the Mozilla Public License v. 2.0 as published by Mozilla.
- 
+
  * The Game Closure SDK is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * Mozilla Public License v. 2.0 for more details.
- 
+
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
@@ -26,6 +26,10 @@
 #include "core/geometry.h"
 #include <math.h>
 #include <stdlib.h>
+
+#include "core/deps/lodepng/lodepng.h"
+#include "core/deps/base64/base64.h"
+#include <stdint.h>
 
 #define GET_MODEL_VIEW_MATRIX(ctx) (&ctx->modelView[ctx->mvp])
 #define GET_CLIPPING_BOUNDS(ctx) (&ctx->clipStack[ctx->mvp])
@@ -683,3 +687,174 @@ void context_2d_drawImage(context_2d *ctx, int srcTex, const char *url, const re
 		draw_textures_item(GET_MODEL_VIEW_MATRIX(ctx), tex->name, tex->width, tex->height, tex->originalWidth, tex->originalHeight, *srcRect, *destRect, * GET_CLIPPING_BOUNDS(ctx), ctx->globalAlpha[ctx->mvp], composite_op, &ctx->filter_color, ctx->filter_type);
 	}
 }
+
+
+void context_2d_getImageData(context_2d *ctx, int x, int y, int width, int height, uint8_t *data) {
+	context_2d_bind(ctx);
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+}
+
+
+// typedef struct {
+//     uint8_t red;
+//     uint8_t green;
+//     uint8_t blue;
+//     uint8_t alpha;
+// } pixel_t;
+
+// typedef struct {
+//     pixel_t *pixels;
+//     size_t width;
+//     size_t height;
+// } bitmap_t;
+
+// /* Given "bitmap", this returns the pixel of bitmap at the point
+//    ("x", "y"). */
+// static pixel_t * pixel_at (bitmap_t * bitmap, int x, int y) {
+//   return bitmap->pixels + bitmap->width * y + x;
+// }
+
+// static void my_png_write_data(png_structp png_ptr, png_bytep data, png_size_t length) {
+//   /* with libpng15 next line causes pointer deference error; use libpng12 */
+//   mem_encode* p=(mem_encode*)png_get_io_ptr(png_ptr); /* was png_ptr->io_ptr */
+//   size_t nsize = p->size + length;
+
+//   LOG("{core} buffer size: %i", p->size);
+
+//   /* allocate or grow buffer */
+//   if(p->buffer)
+//     p->buffer = realloc(p->buffer, nsize);
+//   else
+//     p->buffer = malloc(nsize);
+
+//   if(!p->buffer)
+//     png_error(png_ptr, "Write Error");
+
+//   /* copy new bytes to end of buffer */
+//   memcpy(p->buffer + p->size, data, length);
+//   p->size += length;
+// }
+
+// /* Attempts to save PNG to file; returns 0 on success, non-zero on error. */
+// static int write_png_to_buffer(bitmap_t *bitmap, mem_encode *buffer) {
+//     png_structp png_ptr = NULL;
+//     png_infop info_ptr = NULL;
+//     size_t x, y;
+//     png_byte **row_pointers = NULL;
+// 		/* "status" contains the return value of this function. At first
+//        it is set to a value which means 'failure'. When the routine
+//        has finished its work, it is set to a value which means
+//        'success'. */
+//     int status = -1;
+
+//     int pixel_size = 4;
+//     int depth = 8;
+
+//     LOG("{core} write_png_to_buffer");
+
+//     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+//     if (png_ptr == NULL) {
+//     	LOG("{core} png_create_write_struct_failed");
+//     	goto png_create_write_struct_failed;
+//     }
+
+//     info_ptr = png_create_info_struct(png_ptr);
+//     if (info_ptr == NULL) {
+//     	LOG("{core} png_create_info_struct_failed");
+//     	goto png_create_info_struct_failed;
+//     }
+
+//     /* Set up error handling. */
+//     if (setjmp(png_jmpbuf(png_ptr))) {
+//     	LOG("{core} png_failure");
+//     	goto png_failure;
+//     }
+
+//     /* Set image attributes. */
+//     png_set_IHDR(png_ptr,
+//                  info_ptr,
+//                  bitmap->width,
+//                  bitmap->height,
+//                  depth,
+//                  PNG_COLOR_TYPE_RGBA,
+//                  PNG_INTERLACE_NONE,
+//                  PNG_COMPRESSION_TYPE_DEFAULT,
+//                  PNG_FILTER_TYPE_DEFAULT);
+
+//     /* Initialize rows of PNG. */
+//     row_pointers = png_malloc(png_ptr, bitmap->height * sizeof(png_byte *));
+//     for (y = 0; y < bitmap->height; ++y) {
+//     	png_byte *row =
+//     		png_malloc(png_ptr, sizeof(uint8_t) * bitmap->width * pixel_size);
+//     	row_pointers[y] = row;
+//     	for (x = 0; x < bitmap->width; ++x) {
+//     		pixel_t *pixel = pixel_at(bitmap, x, y);
+//     		*row++ = pixel->red;
+//     		*row++ = pixel->green;
+//     		*row++ = pixel->blue;
+//     		*row++ = pixel->alpha;
+//     	}
+//     }
+
+//     /* Write the image data. */
+//     png_set_rows(png_ptr, info_ptr, row_pointers);
+//     LOG("{core} png_set_write_fn");
+// 		png_set_write_fn(png_ptr, buffer, my_png_write_data, NULL);
+//     png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+//     /* The routine has successfully written the file, so we set
+//        "status" to a value which indicates success. */
+//     status = 0;
+
+//     /* Cleanup. */
+//     for (y = 0; y < bitmap->height; y++) {
+//     	png_free(png_ptr, row_pointers[y]);
+//     }
+//     png_free(png_ptr, row_pointers);
+
+//     /* Finish writing. */
+//   png_failure:
+//  	png_create_info_struct_failed:
+//     png_destroy_write_struct(&png_ptr, &info_ptr);
+//   png_create_write_struct_failed:
+//     return status;
+// }
+
+void context_2d_getImagePng(context_2d *ctx, int x, int y, int width, int height, char **pngB64, int *pngB64Size) {
+	LOG("{core} getImagePng start");
+	context_2d_bind(ctx);
+
+	uint8_t *pixelBuffer;
+	size_t bufferSize = width * height * 4;
+	LOG("{core} Pixel Buffer Size: %u", bufferSize);
+	pixelBuffer = (uint8_t*)malloc(bufferSize * sizeof(uint8_t));
+	if (pixelBuffer == NULL) {
+		LOG("{core} ERROR: could not allocate memory for raw pixel buffer!");
+	}
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuffer);
+
+	uint8_t *png;
+	size_t pngSize;
+	unsigned error = lodepng_encode32(&png, &pngSize, pixelBuffer, width, height);
+	if (error) {
+		LOG("{core} LodePNG Error %u: %s", error, lodepng_error_text(error));
+	} else {
+		LOG("{core} LodePNG Size: %u", pngSize);
+		LOG("{core} LodePNG 1st Byte: %u", png[0]);
+		*pngB64 = base64(png, pngSize, pngB64Size);
+		//png = png2;
+	}
+
+	// bitmap_t bitmap;
+	// bitmap.pixels = (pixel_t*)pixels;
+	// bitmap.width = width;
+	// bitmap.height = height;
+
+	//buffer->buffer = pixels;
+	//buffer->size = size;
+	//int status = write_png_to_buffer(&bitmap, buffer);
+
+	free(pixelBuffer);
+	free(png);
+}
+
