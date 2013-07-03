@@ -3,12 +3,12 @@
  *
  * The Game Closure SDK is free software: you can redistribute it and/or modify
  * it under the terms of the Mozilla Public License v. 2.0 as published by Mozilla.
- 
+
  * The Game Closure SDK is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * Mozilla Public License v. 2.0 for more details.
- 
+
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
@@ -20,6 +20,8 @@
 #include "rgba.h"
 #include "core/tealeaf_canvas.h"
 #include "core/texture_2d.h"
+
+//#include "core/deps/lodepng/lodepng.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +99,13 @@ void context_2d_flush(context_2d *ctx);
 void context_2d_drawImage(context_2d *ctx, int srcTex, const char *url, const rect_2d *srcRect, const rect_2d *destRect, int composite_op);
 void context_2d_draw_point_sprites(context_2d *ctx, const char *url, float point_size, float step_size, rgba *color, float x1, float y1, float x2, float y2);
 
+void context_2d_getImageData(context_2d *ctx, int x, int y, int width, int height, uint8_t *data);
+/* structure to store PNG image bytes */
+// typedef struct mem_encode_t {
+//   uint8_t *buffer;
+//   size_t size;
+// } mem_encode;
+void context_2d_getImagePng(context_2d *ctx, int x, int y, int width, int height, char **pngB64, int *pngB64Size);
 
 void context_2d_add_filter(context_2d *ctx, rgba *color);
 void context_2d_clear_filters(context_2d *ctx);
@@ -104,6 +113,7 @@ void context_2d_set_filter_type(context_2d *ctx, int filter_type);
 
 void disable_scissor(context_2d *ctx);
 void enable_scissor(context_2d *ctx);
+
 
 #ifdef __cplusplus
 }
